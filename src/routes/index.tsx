@@ -223,11 +223,16 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
       takeProfit: parseFloat(takeProfit) || 0,
       speed,
       currency,
-      differ: {
-        mode: differMode,
+      duration: 1,
+      primary: {
+        kind: "differs",
+        batch: differMode === "multi",
         digit: Math.min(9, Math.max(0, parseInt(differDigit, 10) || 0)),
         digits: differDigits,
-        transition: differTransition,
+        stakeMode: "global",
+        stakes: {},
+        durationMode: "global",
+        durations: {},
       },
       switcher: {
         enabled: switcherOn,
