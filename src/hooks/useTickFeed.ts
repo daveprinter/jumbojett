@@ -10,6 +10,7 @@ export function useTickFeed(symbol: string) {
   const [ticks, setTicks] = useState<StoredTick[]>([]);
   const [pip, setPip] = useState(2);
   const ticksRef = useRef<StoredTick[]>([]);
+  const pushRef = useRef<(tick: any) => void>(() => undefined);
 
   useEffect(() => {
     let alive = true;
@@ -18,6 +19,19 @@ export function useTickFeed(symbol: string) {
     let retry: ReturnType<typeof setTimeout> | null = null;
 
     ticksRef.current = loadTicks(symbol);
+    const addTick = (tick: any) => {
+      if (!alive || (tick?.symbol ?? tick?.underlying_symbol) !== symbol) return;
+      const ps = Number(tick.pip_size ?? 2);
+      setPip(ps);
+      const t = { e: Number(tick.epoch), p: Number(tick.quote).toFixed(ps) };
+      if (!isFinite(t.e) || t.p === "NaN") return;
+      const list = ticksRef.current;
+      if (list.length && list[list.length - 1]!.e >= t.e) return;
+      ticksRef.current = [...list, t].slice(-5000);
+      setTicks(ticksRef.current);
+      persist();
+    };
+    pushRef.current = addTick;
     setTicks(ticksRef.current);
 
     const persist = () => {
@@ -41,15 +55,7 @@ export function useTickFeed(symbol: string) {
         if (alive) retry = setTimeout(connect, 3000);
       };
       ws.onMessage((msg) => {
-        if (msg?.msg_type !== "tick" || msg.tick?.symbol !== symbol) return;
-        const ps = Number(msg.tick.pip_size ?? 2);
-        setPip(ps);
-        const t = { e: Number(msg.tick.epoch), p: Number(msg.tick.quote).toFixed(ps) };
-        const list = ticksRef.current;
-        if (list.length && list[list.length - 1]!.e >= t.e) return;
-        ticksRef.current = [...list, t].slice(-5000);
-        setTicks(ticksRef.current);
-        persist();
+        if (msg?.msg_type === "tick") addTick(msg.tick);
       });
       try {
         const hist: any = await ws.send({
@@ -86,5 +92,7 @@ export function useTickFeed(symbol: string) {
   }, [symbol]);
 
   const last = ticks[ticks.length - 1];
-  return { ticks, pip, price: last?.p ?? "—", lastDigit: last ? Number(last.p.slice(-1)) : null };
+  /** Feed a raw Deriv tick (e.g. from the logged-in account socket). */
+  const pushTick = (tick: any) => pushRef.current(tick);
+  return { pushTick, ticks, pip, price: last?.p ?? "—", lastDigit: last ? Number(last.p.slice(-1)) : null };
 }

@@ -167,6 +167,8 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
   void price;
   void lastDigit;
   const feed = useTickFeed(symbol);
+  const feedRef = useRef(feed);
+  feedRef.current = feed;
   const [circleTicks, setCircleTicks] = usePersistentState("circleTicks", "1000");
   const circleStats = digitStats(feed.ticks, Math.max(1, parseInt(circleTicks, 10) || 1000));
 
@@ -327,7 +329,10 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
       });
       engineRef.current = engine;
       engine.hydrateStats(statsRef.current);
-      await engine.subscribeTicks(symbol);
+      auth.ws.onMessage((msg) => {
+        if (msg?.msg_type === "tick" && msg.tick) feedRef.current.pushTick(msg.tick);
+      });
+      await engine.subscribeTicks(symbol).catch((e: any) => toast.error(e?.message || "Live prices unavailable"));
       await auth.ws.send({ balance: 1, subscribe: 1 }).catch(() => undefined);
       auth.ws.onClose = () => {
         setConnected(false);
