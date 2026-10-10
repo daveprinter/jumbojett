@@ -67,6 +67,11 @@ import {
 import { AdminPanel } from "@/components/AdminPanel";
 import { HelpAssistant } from "@/components/HelpAssistant";
 import { LicenseGate } from "@/components/LicenseGate";
+import { MultiContracts } from "@/components/MultiContracts";
+import { DigitCircles } from "@/components/DigitCircles";
+import { useTickFeed } from "@/hooks/useTickFeed";
+import { digitStats } from "@/lib/tickStore";
+import { DIGIT_KINDS, type PrimaryConfig } from "@/lib/botEngine";
 import { useLicense } from "@/hooks/useLicense";
 
 
@@ -168,17 +173,19 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
   const [speed, setSpeed] = usePersistentState<"normal" | "everytick">("speed", "normal");
   const [currentStake, setCurrentStake] = useState(0.35);
 
-  // differ config
-  const [differMode, setDifferMode] = usePersistentState<"single" | "multi">(
-    "differMode",
-    "single",
-  );
-  const [differDigit, setDifferDigit] = usePersistentState("differDigit", "5");
-  const [differDigits, setDifferDigits] = usePersistentState<number[]>("differDigits", []);
-  const [differTransition, setDifferTransition] = usePersistentState<Transition>(
-    "differTransition",
-    "onloss",
-  );
+  const [duration, setDuration] = usePersistentState("duration", "1");
+
+  // main contract (multiple contracts panel)
+  const [primary, setPrimary] = usePersistentState<PrimaryConfig>("primary", {
+    kind: "differs",
+    batch: false,
+    digit: 5,
+    digits: [],
+    stakeMode: "global",
+    stakes: {},
+    durationMode: "global",
+    durations: {},
+  });
 
   // recovery
   const [recoveryOn, setRecoveryOn] = usePersistentState("recoveryOn", false);
@@ -247,10 +254,8 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
       takeProfit,
       speed,
       currency,
-      differMode,
-      differDigit,
-      differDigits,
-      differTransition,
+      duration,
+      primary,
       recoveryOn,
       recoveryKinds,
       kindTransition,
