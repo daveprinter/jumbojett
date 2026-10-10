@@ -1,58 +1,68 @@
 import { cn } from "@/lib/utils";
 
-/** Deriv-style digit circles with a moving triangle cursor over the current digit. */
+const R = 26;
+const C = 2 * Math.PI * R;
+
+/** Deriv-style digit circles: ring arc per digit, green = most frequent, red = least, triangle under current digit. */
 export function DigitCircles({
   pct,
   current,
-  tone,
 }: {
   pct: number[];
   current: number | null;
-  /** Optional colour per digit (e.g. even/odd): "win" | "loss" */
   tone?: (d: number) => "win" | "loss" | undefined;
 }) {
   const max = Math.max(...pct);
   const min = Math.min(...pct);
   const hasData = pct.some((p) => p > 0);
   return (
-    <div className="relative pt-4">
-      {current !== null && (
-        <div
-          className="absolute top-0 h-0 w-0 -translate-x-1/2 border-x-[7px] border-t-[10px] border-x-transparent border-t-primary transition-[left] duration-300 ease-out"
-          style={{ left: `${(current + 0.5) * 10}%` }}
-          aria-hidden
-        />
-      )}
-      <div className="grid grid-cols-10 gap-1">
-        {pct.map((p, d) => {
-          const isMax = hasData && p === max;
-          const isMin = hasData && p === min && !isMax;
-          const t = tone?.(d);
-          return (
-            <div key={d} className="flex flex-col items-center">
+    <div className="grid grid-cols-5 gap-x-2 gap-y-3">
+      {pct.map((p, d) => {
+        const isMax = hasData && p === max;
+        const isMin = hasData && p === min && !isMax;
+        const active = current === d;
+        const arc = hasData ? Math.min(1, p / (max || 1)) * 0.35 * C : 0;
+        return (
+          <div key={d} className="flex flex-col items-center">
+            <div className="relative aspect-square w-full max-w-16">
+              <svg viewBox="0 0 64 64" className="absolute inset-0 h-full w-full -rotate-90">
+                <circle cx="32" cy="32" r={R} fill="none" strokeWidth="5" className="stroke-muted" />
+                {(isMax || isMin) && (
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r={R}
+                    fill="none"
+                    strokeWidth="5"
+                    strokeLinecap="round"
+                    strokeDasharray={`${arc} ${C}`}
+                    strokeDashoffset={-C * 0.32}
+                    className={cn("transition-all duration-300", isMax ? "stroke-win" : "stroke-loss")}
+                  />
+                )}
+              </svg>
               <div
                 className={cn(
-                  "flex aspect-square w-full max-w-11 items-center justify-center rounded-full border-[3px] text-sm font-bold transition-colors",
-                  current === d ? "bg-primary text-primary-foreground" : "bg-card",
-                  isMax ? "border-win" : isMin ? "border-loss" : "border-border",
-                  !isMax && !isMin && t === "win" && "border-win/40",
-                  !isMax && !isMin && t === "loss" && "border-loss/40",
+                  "absolute inset-[18%] flex flex-col items-center justify-center rounded-full transition-colors",
+                  active ? "bg-foreground text-background" : "text-foreground",
                 )}
               >
-                {d}
+                <span className="text-sm font-bold leading-none">{d}</span>
+                <span className={cn("mt-0.5 text-[9px] tabular-nums", active ? "opacity-90" : "text-muted-foreground")}>
+                  {p.toFixed(1)}%
+                </span>
               </div>
-              <span
-                className={cn(
-                  "mt-1 text-[10px] font-semibold tabular-nums",
-                  isMax ? "text-win" : isMin ? "text-loss" : "text-muted-foreground",
-                )}
-              >
-                {p.toFixed(1)}%
-              </span>
             </div>
-          );
-        })}
-      </div>
+            <div
+              className={cn(
+                "mt-1 h-0 w-0 border-x-[6px] border-b-[9px] border-x-transparent border-b-loss transition-opacity duration-200",
+                active ? "opacity-100" : "opacity-0",
+              )}
+              aria-hidden
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
