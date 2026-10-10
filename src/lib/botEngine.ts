@@ -269,7 +269,8 @@ export class BotEngine {
     this.cfg = { ...this.cfg, symbol };
     this.unsubscribe?.();
     this.unsubscribe = this.ws.onMessage((msg) => {
-      if (msg?.msg_type === "tick" && msg.tick?.symbol === this.cfg.symbol) {
+      const sym = msg?.tick?.symbol ?? msg?.tick?.underlying_symbol;
+      if (msg?.msg_type === "tick" && sym === this.cfg.symbol) {
         this.handleTick(msg.tick);
       }
       if (msg?.msg_type === "balance" && msg.balance) {
@@ -277,7 +278,14 @@ export class BotEngine {
       }
     });
     await this.ws.send({ forget_all: "ticks" }).catch(() => undefined);
-    await this.ws.send({ ticks: symbol, subscribe: 1 });
+    try {
+      await this.ws.send({ ticks: symbol, subscribe: 1 });
+    } catch (e) {
+      if (this.ws.mode !== "pat") throw e;
+      await this.ws.send({ ticks: { underlying_symbol: symbol }, subscribe: 1 }).catch(() =>
+        this.ws.send({ underlying_symbol: symbol, ticks: 1, subscribe: 1 }),
+      );
+    }
   }
 
   start() {
