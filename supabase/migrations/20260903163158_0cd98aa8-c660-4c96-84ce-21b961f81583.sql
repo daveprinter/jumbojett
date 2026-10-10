@@ -1,1 +1,0 @@
-ALTER TABLE public.admin_sessions ADD COLUMN IF NOT EXISTS login_email TEXT;
