@@ -67,6 +67,11 @@ import {
 import { AdminPanel } from "@/components/AdminPanel";
 import { HelpAssistant } from "@/components/HelpAssistant";
 import { LicenseGate } from "@/components/LicenseGate";
+import { MultiContracts } from "@/components/MultiContracts";
+import { DigitCircles } from "@/components/DigitCircles";
+import { useTickFeed } from "@/hooks/useTickFeed";
+import { digitStats } from "@/lib/tickStore";
+import { DIGIT_KINDS, type PrimaryConfig } from "@/lib/botEngine";
 import { useLicense } from "@/hooks/useLicense";
 
 
@@ -159,6 +164,11 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
   const [symbol, setSymbol] = usePersistentState("symbol", "1HZ10V");
   const [price, setPrice] = useState("—");
   const [lastDigit, setLastDigit] = useState<number | null>(null);
+  void price;
+  void lastDigit;
+  const feed = useTickFeed(symbol);
+  const [circleTicks, setCircleTicks] = usePersistentState("circleTicks", "1000");
+  const circleStats = digitStats(feed.ticks, Math.max(1, parseInt(circleTicks, 10) || 1000));
 
   // trade settings
   const [stake, setStake] = usePersistentState("stake", "0.35");
@@ -168,17 +178,19 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
   const [speed, setSpeed] = usePersistentState<"normal" | "everytick">("speed", "normal");
   const [currentStake, setCurrentStake] = useState(0.35);
 
-  // differ config
-  const [differMode, setDifferMode] = usePersistentState<"single" | "multi">(
-    "differMode",
-    "single",
-  );
-  const [differDigit, setDifferDigit] = usePersistentState("differDigit", "5");
-  const [differDigits, setDifferDigits] = usePersistentState<number[]>("differDigits", []);
-  const [differTransition, setDifferTransition] = usePersistentState<Transition>(
-    "differTransition",
-    "onloss",
-  );
+  const [duration, setDuration] = usePersistentState("duration", "1");
+
+  // main contract (multiple contracts panel)
+  const [primary, setPrimary] = usePersistentState<PrimaryConfig>("primary", {
+    kind: "differs",
+    batch: false,
+    digit: 5,
+    digits: [],
+    stakeMode: "global",
+    stakes: {},
+    durationMode: "global",
+    durations: {},
+  });
 
   // recovery
   const [recoveryOn, setRecoveryOn] = usePersistentState("recoveryOn", false);
@@ -223,17 +235,8 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
       takeProfit: parseFloat(takeProfit) || 0,
       speed,
       currency,
-      duration: 1,
-      primary: {
-        kind: "differs",
-        batch: differMode === "multi",
-        digit: Math.min(9, Math.max(0, parseInt(differDigit, 10) || 0)),
-        digits: differDigits,
-        stakeMode: "global",
-        stakes: {},
-        durationMode: "global",
-        durations: {},
-      },
+      duration: Math.min(10, Math.max(1, parseInt(duration, 10) || 1)),
+      primary,
       switcher: {
         enabled: switcherOn,
         markets: switchMarkets,
@@ -256,10 +259,8 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
       takeProfit,
       speed,
       currency,
-      differMode,
-      differDigit,
-      differDigits,
-      differTransition,
+      duration,
+      primary,
       recoveryOn,
       recoveryKinds,
       kindTransition,
@@ -411,8 +412,8 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
       setPaused(false);
       return;
     }
-    if (differMode === "multi" && differDigits.length === 0) {
-      toast.error("Select at least one digit to differ");
+    if (primary.batch && DIGIT_KINDS.includes(primary.kind) && primary.digits.length === 0) {
+      toast.error("Select at least one digit for batch mode");
       return;
     }
     if (recoveryOn && recoveryKinds.length === 0) {
@@ -623,13 +624,34 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Live price
                 </p>
-                <p className="font-mono text-xl font-bold text-primary">{price}</p>
+                <p className="font-mono text-xl font-bold text-primary">{feed.price}</p>
                 <p className="text-xs text-muted-foreground">
-                  Last digit: <span className="font-semibold">{lastDigit ?? "—"}</span>
+                  Last digit: <span className="font-semibold">{feed.lastDigit ?? "—"}</span>
                 </p>
               </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">{marketLabel(symbol)}</p>
+          </Card>
+
+          {/* Digit circles analysis */}
+          <Card className="p-4">
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">Digit analysis</h2>
+                <p className="text-[11px] text-muted-foreground">
+                  {circleStats.total} ticks · green = most, red = least
+                </p>
+              </div>
+              <div className="w-32">
+                <Label className="mb-1 block text-[11px]">Ticks to analyze</Label>
+                <Input
+                  inputMode="numeric"
+                  value={circleTicks}
+                  onChange={(e) => setCircleTicks(e.target.value.replace(/[^0-9]/g, ""))}
+                />
+              </div>
+            </div>
+            <DigitCircles pct={circleStats.pct} current={feed.lastDigit} />
           </Card>
 
           {/* Trade settings */}
@@ -640,6 +662,11 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
               <Field label="Martingale" value={martingale} onChange={setMartingale} />
               <Field label="Stop loss" value={stopLoss} onChange={setStopLoss} />
               <Field label="Take profit" value={takeProfit} onChange={setTakeProfit} />
+              <Field
+                label="Tick duration (1–10)"
+                value={duration}
+                onChange={(v) => setDuration(v.replace(/[^0-9]/g, "").slice(0, 2))}
+              />
             </div>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div>
@@ -749,62 +776,24 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
             )}
           </Card>
 
-          {/* Differ contract */}
-          <Card className="p-4">
-            <h2 className="mb-3 text-sm font-semibold">Differs contract</h2>
-            <div className="mb-3 grid grid-cols-2 gap-3">
-              <ModeCard
-                active={differMode === "multi"}
-                title="Multi contract"
-                subtitle="Rotate several digits"
-                onClick={() => setDifferMode("multi")}
-              />
-              <ModeCard
-                active={differMode === "single"}
-                title="Single contract"
-                subtitle="Differ one digit"
-                onClick={() => setDifferMode("single")}
-              />
-            </div>
-            {differMode === "single" ? (
-              <div className="max-w-40">
-                <Label className="mb-1.5 block text-xs">Digit to differ</Label>
-                <Input
-                  inputMode="numeric"
-                  value={differDigit}
-                  onChange={(e) => setDifferDigit(e.target.value.replace(/[^0-9]/g, "").slice(-1))}
-                />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <Label className="mb-1.5 block text-xs">Digits to differ</Label>
-                  <DigitGrid
-                    selected={differDigits}
-                    onToggle={(d) => setDifferDigits((prev) => toggleDigit(prev, d))}
-                  />
-                </div>
-                <div>
-                  <Label className="mb-1.5 block text-xs">Transition mode</Label>
-                  <Select
-                    value={differTransition}
-                    onValueChange={(v) => setDifferTransition(v as Transition)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TRANSITIONS.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-          </Card>
+          {/* Multiple contracts */}
+          <MultiContracts
+            ticks={feed.ticks}
+            lastDigit={feed.lastDigit}
+            primary={primary}
+            onPrimary={setPrimary}
+            canTrade={connected}
+            onManual={(type, barrier, label) => {
+              const engine = engineRef.current;
+              if (!engine) {
+                toast.error("Connect your account first");
+                return;
+              }
+              engine.updateConfig(buildConfig());
+              engine.manualTrade(type, barrier);
+              toast.success(`Manual ${label} sent`);
+            }}
+          />
 
           {/* Recovery */}
           <Card className="p-4">

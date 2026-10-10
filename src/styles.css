@@ -197,7 +197,6 @@ a[href*="lovable.dev/?utm"] {
   border: 1px solid var(--glass-border);
   color: var(--glass-foreground);
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 @keyframes plane-fly {
