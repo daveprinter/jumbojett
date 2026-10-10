@@ -26,17 +26,17 @@ export function LicenseGate({
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <Card className="w-full max-w-md p-6">
         <div className="flex flex-col items-center text-center">
-          <img src="/icon-192.png" alt="Pluto Trader logo" className="h-16 w-16 rounded-2xl" />
-          <h1 className="mt-4 text-xl font-bold">Pluto AI Trader</h1>
+          <img src="/icon-192.png" alt="Jumbo Jet Trader logo" className="h-16 w-16 rounded-2xl" />
+          <h1 className="mt-4 text-xl font-bold">Jumbo Jet AI Trader</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Licensed automated Deriv digit trading hub — $10 per month, per device.
+            Licensed automated Deriv digit trading hub — $20 per month, per device.
           </p>
         </div>
 
         <Button
           className="mt-6 w-full"
           size="lg"
-          onClick={() => openWhatsApp("Hello, I want to purchase the tool (Pluto AI Trader).")}
+          onClick={() => openWhatsApp("Hello, I want to purchase the tool (Jumbo Jet AI Trader).")}
         >
           <ShoppingCart className="mr-2 h-4 w-4" /> Buy the tool
         </Button>
@@ -51,7 +51,7 @@ export function LicenseGate({
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               id="licence"
-              placeholder="PLUTO-XXXX-XXXX-XXXX"
+              placeholder="JUMBO-XXXX-XXXX-XXXX"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && onActivate(code)}
@@ -74,7 +74,7 @@ export function LicenseGate({
               className="w-full"
               onClick={() =>
                 openWhatsApp(
-                  `Hello developer, I have a license key problem with Pluto AI Trader: ${error}${
+                  `Hello developer, I have a license key problem with Jumbo Jet AI Trader: ${error}${
                     code ? ` (key: ${code})` : ""
                   }`,
                 )
