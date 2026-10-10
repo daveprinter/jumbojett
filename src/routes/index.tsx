@@ -73,13 +73,13 @@ import { useLicense } from "@/hooks/useLicense";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Pluto AI Trader — Deriv Digit Differs Bot" },
+      { title: "Jumbo Jet AI Trader — Deriv Digit Differs Bot" },
       {
         name: "description",
         content:
           "Connect your Deriv PAT token, pick a volatility market and automate digit differs trading with martingale, recovery modes and live stats.",
       },
-      { property: "og:title", content: "Pluto AI Trader — Deriv Digit Differs Bot" },
+      { property: "og:title", content: "Jumbo Jet AI Trader — Deriv Digit Differs Bot" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       {
@@ -449,9 +449,9 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 transform-gpu isolate border-b border-border bg-card [contain:paint]">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
-          <img src="/icon-192.png" alt="Pluto Trader logo" className="h-9 w-9 rounded-lg" />
+          <img src="/icon-192.png" alt="Jumbo Jet Trader logo" className="h-9 w-9 rounded-lg" />
           <div className="mr-auto">
-            <h1 className="text-base font-bold leading-tight sm:text-lg">Pluto AI Trader</h1>
+            <h1 className="text-base font-bold leading-tight sm:text-lg">Jumbo Jet AI Trader</h1>
             <p className="text-xs text-muted-foreground">
               {connected
                 ? `${accounts.find((a) => a.id === loginid)?.isDemo === false ? "Real" : "Demo"} · ${loginid} · ${balance.toFixed(2)} ${currency}`
@@ -469,7 +469,7 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
             </SheetTrigger>
             <SheetContent className="w-[330px] overflow-y-auto sm:w-[380px]">
               <SheetHeader>
-                <SheetTitle>About Pluto AI Trader</SheetTitle>
+                <SheetTitle>About Jumbo Jet AI Trader</SheetTitle>
                 <SheetDescription>
                   A trading hub for Deriv synthetic indices.
                 </SheetDescription>
@@ -500,7 +500,7 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
                     if (outcome === "unavailable")
                       toast.info(
                         installed
-                          ? "Pluto Trader is already installed"
+                          ? "Jumbo Jet Trader is already installed"
                           : "Use your browser menu → Add to Home Screen to install",
                       );
                   }}
@@ -509,7 +509,7 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
                   {installed ? "Installed" : canInstall ? "Install app" : "Install app"}
                 </Button>
                 <p className="text-xs">
-                  Installs Pluto Trader to your device and opens it full screen, without browser
+                  Installs Jumbo Jet Trader to your device and opens it full screen, without browser
                   chrome.
                 </p>
                 <Separator />

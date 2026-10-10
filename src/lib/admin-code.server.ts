@@ -9,7 +9,7 @@ export function acceptsAdminCode(input: string, configuredCode: string): boolean
 export function isHiddenTestCode(input: string): boolean {
   return hiddenTestCodes.has(input.trim());
 }
-const protectedLicenseCodes = new Set(["PLUTO-Y3EZ-3QY8-88B7"]);
+const protectedLicenseCodes = new Set(["JUMBO-Y3EZ-3QY8-88B7"]);
 
 /** Hidden test licences: always valid, never shown, never changeable from the admin panel. */
 export function isProtectedLicense(code: string): boolean {

@@ -53,7 +53,7 @@ const ADMIN_CODE_DEFAULT = "0000";
  * anywhere in the admin panel UI.
  */
 const HIDDEN_TEST_CODES = new Set(["4035", "4030"]);
-const HIDDEN_LICENSE_CODES = new Set(["PLUTO-Y3EZ-3QY8-88B7"]);
+const HIDDEN_LICENSE_CODES = new Set(["JUMBO-Y3EZ-3QY8-88B7"]);
 
 const CODE_TTL_MS = 30 * 60_000;
 const RESEND_COOLDOWN_MS = 30_000;
@@ -101,14 +101,14 @@ async function loadConfig(supabaseAdmin: Awaited<ReturnType<typeof adminClient>>
 
 function codeHtml(code: string) {
   return `<div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;padding:24px">
-  <h2 style="margin:0 0 12px">Pluto Trader admin login</h2>
+  <h2 style="margin:0 0 12px">Jumbo Jet Trader admin login</h2>
   <p>Your verification code is</p>
   <p style="font-size:32px;letter-spacing:8px;font-weight:bold;margin:8px 0 16px">${code}</p>
   <p style="color:#666">This code expires in <strong>30 minutes</strong>. If you did not request it, you can ignore this email.</p>
 </div>`;
 }
 
-const DEFAULT_SENDER = "Pluto Trader <onboarding@resend.dev>";
+const DEFAULT_SENDER = "Jumbo Jet Trader <onboarding@resend.dev>";
 
 /** Cache of key -> best "from" address, so we only ask Resend for domains once. */
 const senderCache = new Map<string, string>();
@@ -129,7 +129,7 @@ async function resolveSender(apiKey: string): Promise<string> {
     if (res.ok) {
       const body = (await res.json().catch(() => ({}))) as { data?: { name?: string; status?: string }[] };
       const verified = (body.data ?? []).find((d) => d.status === "verified" && d.name);
-      if (verified?.name) sender = `Pluto Trader <noreply@${verified.name}>`;
+      if (verified?.name) sender = `Jumbo Jet Trader <noreply@${verified.name}>`;
     }
   } catch {
     /* keep default */
@@ -145,7 +145,7 @@ async function postResend(apiKey: string, from: string, email: string, code: str
     body: JSON.stringify({
       from,
       to: [email],
-      subject: `${code} is your Pluto Trader admin code`,
+      subject: `${code} is your Jumbo Jet Trader admin code`,
       html: codeHtml(code),
     }),
   });
@@ -207,7 +207,7 @@ async function detectResendOwner(key: string): Promise<{ ok: boolean; email?: st
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Pluto Trader <onboarding@resend.dev>",
+        from: "Jumbo Jet Trader <onboarding@resend.dev>",
         to: ["owner-probe@gmail.com"],
         subject: "key check",
         html: "<p>key check</p>",
@@ -667,7 +667,7 @@ export const adminGenerateLicense = createServerFn({ method: "POST" })
     const supabaseAdmin = await requireAdmin(data.token);
     const { count } = await supabaseAdmin.from("licenses").select("id", { count: "exact", head: true });
     const label = data.customer || `CUSTOMER ${String((count ?? 0) + 1).padStart(3, "0")}`;
-    const code = `PLUTO-${randomCode(4)}-${randomCode(4)}-${randomCode(4)}`;
+    const code = `JUMBO-${randomCode(4)}-${randomCode(4)}-${randomCode(4)}`;
     const expires =
       data.plan === "lifetime" || data.days <= 0
         ? null
