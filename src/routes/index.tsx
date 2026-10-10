@@ -223,17 +223,8 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
       takeProfit: parseFloat(takeProfit) || 0,
       speed,
       currency,
-      duration: 1,
-      primary: {
-        kind: "differs",
-        batch: differMode === "multi",
-        digit: Math.min(9, Math.max(0, parseInt(differDigit, 10) || 0)),
-        digits: differDigits,
-        stakeMode: "global",
-        stakes: {},
-        durationMode: "global",
-        durations: {},
-      },
+      duration: Math.min(10, Math.max(1, parseInt(duration, 10) || 1)),
+      primary,
       switcher: {
         enabled: switcherOn,
         markets: switchMarkets,
@@ -411,8 +402,8 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
       setPaused(false);
       return;
     }
-    if (differMode === "multi" && differDigits.length === 0) {
-      toast.error("Select at least one digit to differ");
+    if (primary.batch && DIGIT_KINDS.includes(primary.kind) && primary.digits.length === 0) {
+      toast.error("Select at least one digit for batch mode");
       return;
     }
     if (recoveryOn && recoveryKinds.length === 0) {
