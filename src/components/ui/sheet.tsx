@@ -3,7 +3,8 @@
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { cn } from "@/lib/utils";
 
@@ -61,10 +62,10 @@ const SheetContent = React.forwardRef<
   <SheetPortal>
     <SheetOverlay />
     <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </SheetPrimitive.Close>
+      <div className="sticky -top-6 z-10 mb-4 flex items-center justify-between bg-background py-1">
+        <SheetPrimitive.Close asChild><Button variant="ghost" size="icon" aria-label="Back" title="Back"><ArrowLeft /></Button></SheetPrimitive.Close>
+        <SheetPrimitive.Close asChild><Button variant="ghost" size="icon" aria-label="Close" title="Close"><X /></Button></SheetPrimitive.Close>
+      </div>
       {children}
     </SheetPrimitive.Content>
   </SheetPortal>
