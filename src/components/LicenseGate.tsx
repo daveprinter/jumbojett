@@ -95,7 +95,7 @@ export function LicenseGate({
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        <Card className="border-[var(--glass-border)] bg-card/60 p-6 shadow-2xl backdrop-blur-md">
+        <Card className="border-[var(--glass-border)] bg-card/40 p-6 shadow-2xl backdrop-blur-md">
           <div className="flex flex-col items-center text-center">
             <img src="/icon-192.png" alt="Jumbo Jet Trader logo" className="h-16 w-16 rounded-2xl" />
             <h1 className="mt-4 text-xl font-bold">Jumbo Jet AI Trader</h1>
