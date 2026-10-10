@@ -164,6 +164,11 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
   const [symbol, setSymbol] = usePersistentState("symbol", "1HZ10V");
   const [price, setPrice] = useState("—");
   const [lastDigit, setLastDigit] = useState<number | null>(null);
+  void price;
+  void lastDigit;
+  const feed = useTickFeed(symbol);
+  const [circleTicks, setCircleTicks] = usePersistentState("circleTicks", "1000");
+  const circleStats = digitStats(feed.ticks, Math.max(1, parseInt(circleTicks, 10) || 1000));
 
   // trade settings
   const [stake, setStake] = usePersistentState("stake", "0.35");
