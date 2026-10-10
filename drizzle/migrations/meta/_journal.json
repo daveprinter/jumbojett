@@ -8,6 +8,13 @@
       "when": 1788418519779,
       "tag": "0000_license_management",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791593460844,
+      "tag": "0001_pluto_schema_idempotent",
+      "breakpoints": true
     }
   ]
 }
