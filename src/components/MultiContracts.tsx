@@ -59,7 +59,7 @@ const KIND_TYPE: Record<PrimaryKind, ContractType> = {
   fall: "PUT",
 };
 
-function PayoutLine({ q, stake, currency }: { q?: PayoutQuote; stake: number; currency: string }) {
+function PayoutLine({ q, stake, currency }: { q: PayoutQuote | undefined; stake: number; currency: string }) {
   if (!q) return <p className="text-[11px] text-muted-foreground">Payout: loading…</p>;
   if (q.payout === null)
     return <p className="text-[11px] text-muted-foreground">Payout: {q.error || "unavailable"}</p>;
