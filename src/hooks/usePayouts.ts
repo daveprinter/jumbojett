@@ -19,7 +19,9 @@ export interface PayoutQuote {
  * Prices depend on market, contract type, barrier, stake and tick duration, so
  * every prediction is quoted with its own settings and refreshed every few seconds.
  */
-export function usePayouts(symbol: string, currency: string, requests: PayoutRequest[]) {
+export function usePayouts(symbol: string, currency: string, requests: PayoutRequest[], getSocket?: () => DerivWS | null) {
+  const sockRef = useRef(getSocket);
+  sockRef.current = getSocket;
   const [quotes, setQuotes] = useState<Record<string, PayoutQuote>>({});
   const wsRef = useRef<DerivWS | null>(null);
   const sig = useMemo(
@@ -35,13 +37,19 @@ export function usePayouts(symbol: string, currency: string, requests: PayoutReq
 
     const quoteAll = async () => {
       try {
-        if (!wsRef.current?.isOpen) {
+        const own = sockRef.current?.();
+        if (own?.isOpen) {
+          // use the logged-in account socket
+        } else if (!wsRef.current?.isOpen) {
           wsRef.current?.close();
           const ws = new DerivWS();
-          await ws.connect();
+          await Promise.race([
+            ws.connect(),
+            new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 6000)),
+          ]);
           wsRef.current = ws;
         }
-        const ws = wsRef.current!;
+        const ws = own?.isOpen ? own : wsRef.current!;
         const results = await Promise.all(
           reqRef.current.map(async (r): Promise<[string, PayoutQuote]> => {
             if (!(r.stake > 0)) return [r.key, { payout: null, error: "Set a stake" }];
@@ -54,7 +62,7 @@ export function usePayouts(symbol: string, currency: string, requests: PayoutReq
                 currency: currency || "USD",
                 duration: Math.min(10, Math.max(1, r.duration || 1)),
                 duration_unit: "t",
-                symbol,
+                ...(ws.mode === "pat" ? { underlying_symbol: symbol } : { symbol }),
                 ...(r.barrier !== null ? { barrier: String(r.barrier) } : {}),
               });
               return [r.key, { payout: Number(res?.proposal?.payout) || null }];
@@ -64,10 +72,13 @@ export function usePayouts(symbol: string, currency: string, requests: PayoutReq
           }),
         );
         if (alive) setQuotes(Object.fromEntries(results));
+        if (alive) timer = setTimeout(quoteAll, 5000);
       } catch {
-        /* offline — retry later */
+        if (alive) {
+          setQuotes(Object.fromEntries(reqRef.current.map((r) => [r.key, { payout: null, error: "Deriv unreachable — connect your account" }])));
+          timer = setTimeout(quoteAll, 3000);
+        }
       }
-      if (alive) timer = setTimeout(quoteAll, 5000);
     };
     void quoteAll();
     return () => {

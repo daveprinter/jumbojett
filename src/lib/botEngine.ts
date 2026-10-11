@@ -331,9 +331,12 @@ export class BotEngine {
   }
 
   /** Buy one contract right now (every-tick speed) or on the next tick (normal speed). */
-  manualTrade(type: ContractType, barrier: number | null) {
-    if (this.cfg.speed === "everytick") void this.buyManual(type, barrier);
-    else this.manualQueue.push({ type, barrier });
+  /** Buys right away and resolves once Deriv confirms (rejects with Deriv's reason). */
+  manualTrade(type: ContractType, barrier: number | null): Promise<void> {
+    return this.buyOne(
+      { type, barrier, stake: round2(this.cfg.stake), duration: clampTicks(this.cfg.duration) },
+      true,
+    );
   }
 
   private resetMarketCounters() {
@@ -580,6 +583,10 @@ export class BotEngine {
       ticksLeft: c.duration,
       manual,
     });
+  }
+
+  get socket() {
+    return this.ws;
   }
 
   private async buyManual(type: ContractType, barrier: number | null) {

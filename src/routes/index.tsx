@@ -790,6 +790,7 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
             canTrade={connected}
             symbol={symbol}
             currency={currency}
+            getSocket={() => engineRef.current?.socket ?? null}
             stake={parseFloat(stake) || 0}
             duration={Math.min(10, Math.max(1, parseInt(duration, 10) || 1))}
             onManual={(type, barrier, label) => {
@@ -799,8 +800,11 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
                 return;
               }
               engine.updateConfig(buildConfig());
-              engine.manualTrade(type, barrier);
-              toast.success(`Manual ${label} sent`);
+              const id = toast.loading(`Buying ${label}…`);
+              engine
+                .manualTrade(type, barrier)
+                .then(() => toast.success(`${label} bought`, { id }))
+                .catch((e: any) => toast.error(`${label} failed: ${e?.message || "Deriv rejected the trade"}`, { id }));
             }}
           />
 
