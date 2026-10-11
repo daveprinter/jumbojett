@@ -788,6 +788,10 @@ function PlutoTrader({ licenseCode, onSignOut }: { licenseCode: string; onSignOu
             primary={primary}
             onPrimary={setPrimary}
             canTrade={connected}
+            symbol={symbol}
+            currency={currency}
+            stake={parseFloat(stake) || 0}
+            duration={Math.min(10, Math.max(1, parseInt(duration, 10) || 1))}
             onManual={(type, barrier, label) => {
               const engine = engineRef.current;
               if (!engine) {
