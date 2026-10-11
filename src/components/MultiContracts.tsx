@@ -16,6 +16,7 @@ import {
 import { DigitCircles } from "@/components/DigitCircles";
 import { DigitGrid } from "@/components/DigitGrid";
 import { usePersistentState } from "@/hooks/usePluto";
+import { usePayouts, type PayoutQuote, type PayoutRequest } from "@/hooks/usePayouts";
 import { cn } from "@/lib/utils";
 import {
   DIGIT_KINDS,
@@ -46,6 +47,31 @@ const KIND_LABEL: Record<PrimaryKind, string> = {
 };
 
 const STRIP = 30;
+
+const KIND_TYPE: Record<PrimaryKind, ContractType> = {
+  over: "DIGITOVER",
+  under: "DIGITUNDER",
+  matches: "DIGITMATCH",
+  differs: "DIGITDIFF",
+  even: "DIGITEVEN",
+  odd: "DIGITODD",
+  rise: "CALL",
+  fall: "PUT",
+};
+
+function PayoutLine({ q, stake, currency }: { q?: PayoutQuote; stake: number; currency: string }) {
+  if (!q) return <p className="text-[11px] text-muted-foreground">Payout: loading…</p>;
+  if (q.payout === null)
+    return <p className="text-[11px] text-muted-foreground">Payout: {q.error || "unavailable"}</p>;
+  const profit = q.payout - stake;
+  return (
+    <p className="text-[11px] text-muted-foreground">
+      Stake {stake.toFixed(2)} → payout{" "}
+      <span className="font-semibold text-foreground">{q.payout.toFixed(2)} {currency}</span>{" "}
+      <span className="text-win">(+{profit.toFixed(2)})</span>
+    </p>
+  );
+}
 
 function DigitSelect({
   label,
@@ -129,7 +155,15 @@ export function MultiContracts({
   onPrimary,
   onManual,
   canTrade,
+  symbol,
+  currency,
+  stake,
+  duration,
 }: {
+  symbol: string;
+  currency: string;
+  stake: number;
+  duration: number;
   ticks: StoredTick[];
   lastDigit: number | null;
   primary: PrimaryConfig;
@@ -155,20 +189,56 @@ export function MultiContracts({
 
   const category = CATEGORIES.find((c) => c.value === cat)!;
   const isDigitKind = DIGIT_KINDS.includes(primary.kind);
+  const selectedDigits = primary.batch ? primary.digits : [primary.digit];
+  const manualSpecs: { kind: PrimaryKind; barrier: number | null }[] =
+    cat === "overunder"
+      ? [{ kind: "over", barrier: overDigit }, { kind: "under", barrier: underDigit }]
+      : cat === "matchdiff"
+        ? [{ kind: "matches", barrier: mdDigit }, { kind: "differs", barrier: mdDigit }]
+        : cat === "evenodd"
+          ? [{ kind: "even", barrier: null }, { kind: "odd", barrier: null }]
+          : [{ kind: "rise", barrier: null }, { kind: "fall", barrier: null }];
+  const autoSpecs = (isDigitKind ? selectedDigits : [null]).map((d) => {
+    const own = primary.batch && d !== null;
+    const st = own && primary.stakeMode === "each" && primary.stakes[String(d)] ? primary.stakes[String(d)]! : stake;
+    const du =
+      own && primary.durationMode === "each" && primary.durations[String(d)] ? primary.durations[String(d)]! : duration;
+    return { key: `auto-${d}`, digit: d, stake: st, duration: du };
+  });
+  const payoutReqs: PayoutRequest[] = [
+    ...manualSpecs.map((m) => ({
+      key: `man-${m.kind}-${m.barrier}`,
+      type: KIND_TYPE[m.kind],
+      barrier: m.barrier,
+      stake,
+      duration,
+    })),
+    ...autoSpecs.map((a) => ({
+      key: a.key,
+      type: KIND_TYPE[primary.kind],
+      barrier: a.digit,
+      stake: a.stake,
+      duration: a.duration,
+    })),
+  ];
+  const quotes = usePayouts(symbol, currency, payoutReqs);
   const toggle = (list: number[], d: number) =>
     list.includes(d) ? list.filter((x) => x !== d) : [...list, d];
 
   const manualBtn = (kind: PrimaryKind, type: ContractType, barrier: number | null, tone: "win" | "loss") => {
     const label = `${KIND_LABEL[kind]}${barrier !== null ? ` ${barrier}` : ""}`;
     return (
-      <Button
-        key={label}
-        variant={tone === "win" ? "win" : "loss"}
-        disabled={!canTrade}
-        onClick={() => onManual(type, barrier, label)}
-      >
-        <Hand className="mr-1.5 h-4 w-4" /> {label}
-      </Button>
+      <div key={label} className="space-y-1">
+        <Button
+          className="w-full"
+          variant={tone === "win" ? "win" : "loss"}
+          disabled={!canTrade}
+          onClick={() => onManual(type, barrier, label)}
+        >
+          <Hand className="mr-1.5 h-4 w-4" /> {label}
+        </Button>
+        <PayoutLine q={quotes[`man-${kind}-${barrier}`]} stake={stake} currency={currency} />
+      </div>
     );
   };
 
@@ -275,8 +345,6 @@ export function MultiContracts({
     );
   }
 
-  const selectedDigits = primary.batch ? primary.digits : [primary.digit];
-
   return (
     <Card className="p-4">
       <h2 className="mb-3 text-sm font-semibold">Multiple contracts</h2>
@@ -348,6 +416,20 @@ export function MultiContracts({
             Tap one above to change it.
           </p>
         )}
+
+        <div className="space-y-1 rounded-lg border border-border bg-accent/20 p-3">
+          <p className="text-xs font-semibold">Expected payout (live from Deriv)</p>
+          {autoSpecs.length === 0 && <p className="text-[11px] text-muted-foreground">Select a digit.</p>}
+          {autoSpecs.map((a) => (
+            <div key={a.key} className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold">
+                {KIND_LABEL[primary.kind]}
+                {a.digit !== null ? ` ${a.digit}` : ""} · {a.duration}t
+              </span>
+              <PayoutLine q={quotes[a.key]} stake={a.stake} currency={currency} />
+            </div>
+          ))}
+        </div>
 
         {isDigitKind && category.kinds.includes(primary.kind) && (
           <div className="space-y-3 rounded-lg border border-border p-3">
