@@ -157,11 +157,13 @@ export function MultiContracts({
   canTrade,
   symbol,
   currency,
+  getSocket,
   stake,
   duration,
 }: {
   symbol: string;
   currency: string;
+  getSocket: () => import("@/lib/deriv").DerivWS | null;
   stake: number;
   duration: number;
   ticks: StoredTick[];
@@ -221,7 +223,7 @@ export function MultiContracts({
       duration: a.duration,
     })),
   ];
-  const quotes = usePayouts(symbol, currency, payoutReqs);
+  const quotes = usePayouts(symbol, currency, payoutReqs, getSocket);
   const toggle = (list: number[], d: number) =>
     list.includes(d) ? list.filter((x) => x !== d) : [...list, d];
 
