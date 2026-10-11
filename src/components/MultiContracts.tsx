@@ -234,11 +234,6 @@ export function MultiContracts({
           <PctBox label="Even" value={even} tone="win" />
           <PctBox label="Odd" value={win.length ? 100 - even : 0} tone="loss" />
         </div>
-        <DigitCircles
-          pct={stats.pct}
-          current={lastDigit}
-          tone={(d) => (d % 2 === 0 ? "win" : "loss")}
-        />
         <TickStrip
           items={recent.map((t) =>
             lastDigitOf(t.p) % 2 === 0
@@ -323,6 +318,7 @@ export function MultiContracts({
           Based on {win.length} of {n} ticks{win.length < n ? " (still collecting)" : ""}.
           Manual buttons trade {canTrade ? "at your stake and tick duration." : "once your Deriv account is connected."}
         </p>
+        <DigitCircles pct={stats.pct} current={lastDigit} />
         {analysis}
       </div>
 
